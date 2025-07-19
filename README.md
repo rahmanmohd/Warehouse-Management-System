@@ -1,4 +1,4 @@
-# 🏢 Warehouse Management System
+# 🏢AI-Powered Warehouse Management System
 
 A comprehensive warehouse management system built with React, TypeScript, Node.js, and SQLite. This system handles SKU mapping, inventory management, sales data processing, and provides AI-powered analytics.
 
