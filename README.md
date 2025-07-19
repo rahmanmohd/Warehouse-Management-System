@@ -102,6 +102,9 @@ Visit `http://localhost:5000` to access the application.
 
 ##  Sample Screenshots
 <img width="1918" height="1022" alt="image" src="https://github.com/user-attachments/assets/7f5d518c-5178-47d1-8881-3497d271788b" />
+<img width="1917" height="1016" alt="image" src="https://github.com/user-attachments/assets/f491b3f7-bedd-4543-9000-1d27d0520263" />
+<img width="1918" height="1017" alt="image" src="https://github.com/user-attachments/assets/8c37863e-dc1e-4345-b270-8abe2bd38bf1" />
+
 
 ## 🔧 Available Scripts
 
