@@ -55,19 +55,46 @@ export class FileProcessor {
       const rows: SalesDataRow[] = [];
       let totalRows = 0;
       let processedRows = 0;
+      let headers: string[] = [];
 
-      // First pass: count total rows
+      // Check if file exists and is readable
+      if (!fs.existsSync(filePath)) {
+        return reject(new Error('File not found'));
+      }
+
+      // First pass: count total rows and get headers
       fs.createReadStream(filePath)
         .pipe(csv())
+        .on('headers', (headerList: string[]) => {
+          headers = headerList;
+          console.log('CSV Headers detected:', headers);
+        })
         .on('data', () => totalRows++)
+        .on('error', (error) => {
+          console.error('CSV parsing error:', error);
+          reject(new Error(`CSV parsing failed: ${error.message}`));
+        })
         .on('end', async () => {
           await storage.updateFileUpload(uploadId, { totalRows });
+
+          // Validate required columns exist
+          const requiredColumns = ['sku', 'quantity', 'revenue'];
+          const missingColumns = requiredColumns.filter(col => 
+            !headers.some(header => header.toLowerCase().includes(col.toLowerCase()))
+          );
+
+          if (missingColumns.length > 0) {
+            return reject(new Error(`Missing required columns: ${missingColumns.join(', ')}`));
+          }
 
           // Second pass: process data
           fs.createReadStream(filePath)
             .pipe(csv())
             .on('data', (row: SalesDataRow) => {
               rows.push(row);
+            })
+            .on('error', (error) => {
+              reject(new Error(`CSV processing failed: ${error.message}`));
             })
             .on('end', async () => {
               try {
@@ -94,26 +121,51 @@ export class FileProcessor {
 
   private async processRow(row: SalesDataRow): Promise<void> {
     try {
-      // Extract and validate data
-      const skuCode = row.sku || row.SKU || row.product_sku;
-      const productName = row.product_name || row.name || row.product;
-      const marketplace = row.marketplace || row.channel || row.platform;
-      const orderDate = row.order_date || row.date || row.order_timestamp;
-      const quantity = parseInt(row.quantity || row.qty || '1');
-      const revenue = parseFloat(row.revenue || row.amount || row.price || '0');
+      // Extract data with flexible column naming - case insensitive
+      const getColumnValue = (possibleNames: string[]): string => {
+        for (const name of possibleNames) {
+          for (const key in row) {
+            if (key.toLowerCase().includes(name.toLowerCase())) {
+              return row[key] || '';
+            }
+          }
+        }
+        return '';
+      };
 
-      if (!skuCode || !marketplace) {
-        console.warn('Skipping row with missing required fields:', row);
+      const skuCode = getColumnValue(['sku', 'product_sku', 'productsku', 'product_code']);
+      const productName = getColumnValue(['product_name', 'productname', 'name', 'title', 'product_title']);
+      const marketplace = getColumnValue(['marketplace', 'channel', 'platform', 'source']) || 'unknown';
+      const orderDateStr = getColumnValue(['order_date', 'orderdate', 'date', 'transaction_date']);
+      const quantityStr = getColumnValue(['quantity', 'qty', 'units', 'count']);
+      const revenueStr = getColumnValue(['revenue', 'price', 'amount', 'total', 'value', 'sales']);
+
+      // Validate required fields
+      if (!skuCode.trim()) {
+        console.warn('Skipping row without SKU:', Object.keys(row).slice(0, 3));
         return;
       }
 
+      // Parse numeric values with validation
+      const quantity = parseInt(quantityStr) || 1;
+      const revenue = parseFloat(revenueStr.replace(/[^\d.-]/g, '')) || 0;
+      
+      // Parse date
+      let orderDate = new Date();
+      if (orderDateStr) {
+        const parsedDate = new Date(orderDateStr);
+        if (!isNaN(parsedDate.getTime())) {
+          orderDate = parsedDate;
+        }
+      }
+
       // Get or create SKU
-      let sku = await storage.getSkuByCode(skuCode);
+      let sku = await storage.getSkuByCode(skuCode.trim());
       if (!sku) {
         sku = await storage.createSku({
-          sku: skuCode,
-          name: productName || skuCode,
-          marketplace: marketplace
+          sku: skuCode.trim(),
+          name: productName.trim() || skuCode.trim(),
+          marketplace: marketplace.toLowerCase().trim()
         });
       }
 
@@ -125,15 +177,15 @@ export class FileProcessor {
       await storage.createSalesData({
         skuId: sku.id,
         mskuId: existingMapping?.msku.id || null,
-        orderDate: new Date(orderDate || Date.now()),
-        quantity: quantity,
+        orderDate,
+        quantity,
         revenue: revenue.toString(),
-        marketplace: marketplace,
+        marketplace: marketplace.toLowerCase().trim(),
         rawData: row
       });
 
     } catch (error) {
-      console.error('Error processing row:', error, row);
+      console.error('Error processing row:', error, 'Row data:', row);
       // Continue processing other rows
     }
   }

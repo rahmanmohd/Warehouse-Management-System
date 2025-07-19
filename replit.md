@@ -8,6 +8,14 @@ This is a full-stack Warehouse Management System built as a web application. The
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (July 19, 2025)
+
+- Enhanced error handling for OpenAI API quota issues with user-friendly messages
+- Improved CSV file processing with flexible column detection and better validation
+- Added comprehensive database seeding with realistic sample data
+- Fixed sidebar navigation component to prevent HTML validation warnings
+- Created sample CSV test data for development and testing
+
 ## System Architecture
 
 ### Frontend Architecture

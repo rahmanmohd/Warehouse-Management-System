@@ -1,0 +1,4 @@
+sku,product_name,marketplace,order_date,quantity,revenue
+test-pen-1,Test Pen Blue,amazon,2025-01-15,2,25.50
+test-pen-2,Test Pen Red,flipkart,2025-01-16,1,12.75
+test-gadget-1,Test Tech Gadget,shopify,2025-01-17,3,89.99

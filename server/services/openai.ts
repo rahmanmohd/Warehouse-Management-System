@@ -156,8 +156,24 @@ If the query cannot be safely generated, set canExecute to false and explain why
         result: [] // This would contain actual query results
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("OpenAI text-to-SQL error:", error);
+      
+      // Handle specific OpenAI errors
+      if (error.code === 'insufficient_quota') {
+        return {
+          error: "OpenAI API quota exceeded",
+          explanation: "The AI service is temporarily unavailable due to quota limits. Please try again later or contact support."
+        };
+      }
+      
+      if (error.code === 'rate_limit_exceeded') {
+        return {
+          error: "Rate limit exceeded",
+          explanation: "Too many requests to the AI service. Please wait a moment and try again."
+        };
+      }
+      
       return {
         error: "Failed to process query",
         explanation: "There was an error processing your request. Please try rephrasing your question."

@@ -152,6 +152,32 @@ export default function AiQuery() {
                       <h3 className="font-medium text-red-900 mb-2">Error</h3>
                       <p className="text-red-700">{queryResult.error}</p>
                       <p className="text-sm text-red-600 mt-2">{queryResult.explanation}</p>
+                      
+                      {queryResult.error.includes("quota") && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+                          <p className="text-blue-800 text-sm font-medium mb-2">Try these ready-to-use queries instead:</p>
+                          <div className="space-y-1">
+                            <button 
+                              onClick={() => setQuery("Show me top selling products by revenue")}
+                              className="block text-left text-blue-600 hover:text-blue-800 text-sm underline"
+                            >
+                              • Top selling products by revenue
+                            </button>
+                            <button 
+                              onClick={() => setQuery("What is the inventory status by warehouse")}
+                              className="block text-left text-blue-600 hover:text-blue-800 text-sm underline"
+                            >
+                              • Inventory status by warehouse
+                            </button>
+                            <button 
+                              onClick={() => setQuery("Sales breakdown by marketplace")}
+                              className="block text-left text-blue-600 hover:text-blue-800 text-sm underline"
+                            >
+                              • Sales breakdown by marketplace
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
