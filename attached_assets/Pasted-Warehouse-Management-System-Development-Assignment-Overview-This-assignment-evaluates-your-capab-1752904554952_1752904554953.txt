@@ -1,0 +1,71 @@
+Warehouse Management System Development Assignment
+
+Overview
+This assignment evaluates your capabilities in:
+Data operations (cleaning, merging, visualization)
+AI-assisted coding efficiency
+Problem-solving skills under time constraints
+Evaluation Criteria
+Code quality
+Data presentation
+Ease of use
+
+Project Description
+Your task is to develop a Minimum Viable Product (MVP) for a Warehouse Management System (WMS). This involves preprocessing sales data to enhance the functionality of the current WMS.
+Assignment Structure
+For a detailed video explanation, refer to the following link:
+https://drive.google.com/drive/folders/1kbeo6E2092XbYQK5tVwX7Z-x8cDz9K6d?usp=sharing
+
+DATA:
+
+WMS Sheet
+https://docs.google.com/spreadsheets/d/1ORu33oTA1KcLMkyjmujcBjdzfavOnkUJJJKxujFq2Fw/edit
+
+Sales Data
+https://drive.google.com/drive/folders/1mzaLpJprXKxwSDI0_Ej157h5dbNKn5y4?usp=sharing
+
+Part 1: Data Cleaning and Management
+Objective
+Create a Python program with a graphical user interface (GUI) that allows users to easily map Stock Keeping Units (SKUs) to Master SKUs (MSKUs).
+
+Key Concepts
+SKU: A unique identifier for products that may vary across different marketplaces (e.g., "Golden Apple" and "GLD" for the same product).
+MSKU: The master identifier that consolidates all variations of a product.
+
+Implementation Steps
+Create a SKU Mapper Class: Develop a class for managing SKU to MSKU mappings.
+Implement a Master Mapping Loader: Load and manage mapping data.
+Develop SKU Identification/Mapping Function: Automatically identify and map SKUs to their corresponding MSKUs.
+Add Combo Product Handling: Support products that may have multiple SKUs.
+Build a Flexible Input Processor: Allow various input formats for sales data.
+
+Enhanced Features
+SKU format validation
+Error handling for missing mappings
+Support for multiple marketplace formats
+Logging of the mapping process
+
+Objective
+Research and Utilize any relationalDB alternatives to Airtables (editable frontend for non tech user) ( Teable.io or NoCodeDB,baserow) to create a visually appealing relational database that organizes sales data, returns data, and more.
+Tasks
+Create a Relational Database: Design a database that effectively manages relationships between data entities (e.g., orders, products).
+Dashboard Creation: Use Airtable’s features to build a dashboard that visualizes key metrics and insights from the data.
+Part 3: Integration and Finalization
+Objective
+Combine the data processing from Part 1 with the database management from Part 2 to create a user-friendly web application.
+Implementation Steps
+Integrate Frontend Development: Use platforms like v0, bolt.new, or Replit to build a web app where users can drag and drop sales data.
+Data Cleaning and Combining: Automate the cleaning and combining of sales data within the app.
+Visualize Metrics: Present key statistics and metrics on the dashboard created in Part 2.
+PART4: AI over Data Layer to retrieve data as per user query, add calculated fields, and add charts
+Research and identify a tool or stack that enables text-to-SQL queries to have data retrieval capabilities, add new columns and add charts
+Reference: lumina-ai-VEED.mp4
+Submission Guidelines
+Please submit your solution in one of the following formats: Google Drive, GitHub, Docker, or Colab. Include the following:
+Code and implementation files
+Relevant links
+A README file along with a LOOM Video that explains:
+What you built (tech stack and logic)
+How you build it (which AI tools you used to achieve the task, 
+How to use your solution
+How to set it up
