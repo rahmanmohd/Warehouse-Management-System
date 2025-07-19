@@ -100,6 +100,9 @@ Visit `http://localhost:5000` to access the application.
 └── package.json
 ```
 
+##  Sample Screenshots
+<img width="1918" height="1022" alt="image" src="https://github.com/user-attachments/assets/7f5d518c-5178-47d1-8881-3497d271788b" />
+
 ## 🔧 Available Scripts
 
 - `npm run dev` - Start development server
@@ -237,4 +240,3 @@ If you encounter any issues or have questions:
 
 ---
 
-**Made with ❤️ for efficient warehouse management**
