@@ -183,7 +183,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMapping(id: number): Promise<boolean> {
     const result = await db.delete(skuMappings).where(eq(skuMappings.id, id));
-    return result.rowCount !== null && result.rowCount > 0;
+    return result.changes > 0;
   }
 
   async getSuggestedMappings(skuId: number): Promise<Msku[]> {
@@ -272,7 +272,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select({
         msku: mskus,
-        totalRevenue: sql<string>`SUM(${salesData.revenue})::text`.as('totalRevenue'),
+        totalRevenue: sql<string>`CAST(SUM(${salesData.revenue}) AS TEXT)`.as('totalRevenue'),
         totalQuantity: sql<number>`SUM(${salesData.quantity})`.as('totalQuantity'),
       })
       .from(salesData)
@@ -310,9 +310,9 @@ export class DatabaseStorage implements IStorage {
     
     const [revenueResult] = await db
       .select({ 
-        total: sql<string>`SUM(${salesData.revenue})::text`.as('total'),
-        lastWeek: sql<string>`SUM(CASE WHEN ${salesData.orderDate} >= NOW() - INTERVAL '7 days' THEN ${salesData.revenue} ELSE 0 END)::text`.as('lastWeek'),
-        previousWeek: sql<string>`SUM(CASE WHEN ${salesData.orderDate} >= NOW() - INTERVAL '14 days' AND ${salesData.orderDate} < NOW() - INTERVAL '7 days' THEN ${salesData.revenue} ELSE 0 END)::text`.as('previousWeek')
+        total: sql<string>`CAST(SUM(${salesData.revenue}) AS TEXT)`.as('total'),
+        lastWeek: sql<string>`CAST(SUM(CASE WHEN ${salesData.orderDate} >= datetime('now', '-7 days') THEN ${salesData.revenue} ELSE 0 END) AS TEXT)`.as('lastWeek'),
+        previousWeek: sql<string>`CAST(SUM(CASE WHEN ${salesData.orderDate} >= datetime('now', '-14 days') AND ${salesData.orderDate} < datetime('now', '-7 days') THEN ${salesData.revenue} ELSE 0 END) AS TEXT)`.as('previousWeek')
       })
       .from(salesData);
 
@@ -343,13 +343,13 @@ export class DatabaseStorage implements IStorage {
 
     return await db
       .select({
-        date: sql<string>`DATE(${salesData.orderDate})::text`.as('date'),
-        revenue: sql<string>`SUM(${salesData.revenue})::text`.as('revenue'),
+        date: sql<string>`date(${salesData.orderDate})`.as('date'),
+        revenue: sql<string>`CAST(SUM(${salesData.revenue}) AS TEXT)`.as('revenue'),
       })
       .from(salesData)
       .where(sql`${salesData.orderDate} >= ${startDate}`)
-      .groupBy(sql`DATE(${salesData.orderDate})`)
-      .orderBy(sql`DATE(${salesData.orderDate})`);
+      .groupBy(sql`date(${salesData.orderDate})`)
+      .orderBy(sql`date(${salesData.orderDate})`);
   }
 }
 

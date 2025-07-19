@@ -1,64 +1,64 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real, blob } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const skus = pgTable("skus", {
-  id: serial("id").primaryKey(),
+export const skus = sqliteTable("skus", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   sku: text("sku").notNull().unique(),
   name: text("name").notNull(),
   marketplace: text("marketplace").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const mskus = pgTable("mskus", {
-  id: serial("id").primaryKey(),
+export const mskus = sqliteTable("mskus", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   msku: text("msku").notNull().unique(),
   name: text("name").notNull(),
   category: text("category"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const skuMappings = pgTable("sku_mappings", {
-  id: serial("id").primaryKey(),
+export const skuMappings = sqliteTable("sku_mappings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   skuId: integer("sku_id").notNull().references(() => skus.id),
   mskuId: integer("msku_id").notNull().references(() => mskus.id),
-  confidence: decimal("confidence", { precision: 3, scale: 2 }).default("1.00"),
+  confidence: real("confidence").default(1.00),
   status: text("status").notNull().default("active"), // active, pending, inactive
   mappedBy: text("mapped_by").default("manual"), // manual, ai, auto
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const inventory = pgTable("inventory", {
-  id: serial("id").primaryKey(),
+export const inventory = sqliteTable("inventory", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   mskuId: integer("msku_id").notNull().references(() => mskus.id),
   warehouse: text("warehouse").notNull(),
   quantity: integer("quantity").notNull().default(0),
   reservedQuantity: integer("reserved_quantity").notNull().default(0),
-  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  lastUpdated: integer("last_updated", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const salesData = pgTable("sales_data", {
-  id: serial("id").primaryKey(),
+export const salesData = sqliteTable("sales_data", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   skuId: integer("sku_id").notNull().references(() => skus.id),
   mskuId: integer("msku_id").references(() => mskus.id),
-  orderDate: timestamp("order_date").notNull(),
+  orderDate: integer("order_date", { mode: "timestamp" }).notNull(),
   quantity: integer("quantity").notNull(),
-  revenue: decimal("revenue", { precision: 10, scale: 2 }).notNull(),
+  revenue: real("revenue").notNull(),
   marketplace: text("marketplace").notNull(),
-  rawData: jsonb("raw_data"), // Store original CSV row data
-  processedAt: timestamp("processed_at").defaultNow().notNull(),
+  rawData: text("raw_data", { mode: "json" }), // Store original CSV row data as JSON text
+  processedAt: integer("processed_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
-export const fileUploads = pgTable("file_uploads", {
-  id: serial("id").primaryKey(),
+export const fileUploads = sqliteTable("file_uploads", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   filename: text("filename").notNull(),
   originalName: text("original_name").notNull(),
   fileSize: integer("file_size").notNull(),
@@ -68,7 +68,7 @@ export const fileUploads = pgTable("file_uploads", {
   rowsProcessed: integer("rows_processed").default(0),
   totalRows: integer("total_rows").default(0),
   errorMessage: text("error_message"),
-  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+  uploadedAt: integer("uploaded_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 // Relations

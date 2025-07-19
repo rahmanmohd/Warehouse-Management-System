@@ -241,6 +241,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch top products" });
     }
   });
+  // Process all files
+  app.post("/api/process-all", async (_req, res) => {
+    try {
+      const uploads = await storage.getFileUploads();
+      const failedFiles = uploads.filter(u => u.status === "failed");
+      
+      if (failedFiles.length === 0) {
+        return res.json({ message: "No failed files to reprocess", processed: 0 });
+      }
+
+      let reprocessed = 0;
+      for (const file of failedFiles) {
+        try {
+          // Reset the file status to pending for reprocessing
+          await storage.updateFileUpload(file.id, {
+            status: "pending",
+            progress: 0,
+            errorMessage: null
+          });
+          reprocessed++;
+        } catch (error) {
+          console.error(`Failed to reset file ${file.id} for reprocessing:`, error);
+        }
+      }
+
+      res.json({ 
+        message: `${reprocessed} failed files reset for reprocessing`, 
+        processed: reprocessed 
+      });
+    } catch (error) {
+      console.error('Process all error:', error);
+      res.status(500).json({ error: "Failed to process files" });
+    }
+  });
 
   // AI Query interface
   app.post("/api/ai/query", async (req, res) => {
@@ -257,6 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Inventory routes
   // Inventory routes
   app.get("/api/inventory", async (req, res) => {
     try {

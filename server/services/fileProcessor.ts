@@ -65,19 +65,24 @@ export class FileProcessor {
       throw new Error('CSV file is empty');
     }
 
-    // Parse headers
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    // Parse headers with better CSV parsing
+    const headers = this.parseCSVLine(lines[0]);
     console.log('CSV Headers detected:', headers);
 
-    // Validate required columns
-    const requiredColumns = ['sku', 'quantity', 'revenue'];
-    const missingColumns = requiredColumns.filter(col => 
-      !headers.some(header => header.toLowerCase().includes(col.toLowerCase()))
+    // Validate required columns (more flexible approach)
+    const hasSkuColumn = headers.some(header => 
+      header.toLowerCase().includes('sku') || 
+      header.toLowerCase().includes('product') ||
+      header.toLowerCase().includes('fsn') ||
+      header.toLowerCase().includes('asin') ||
+      header.toLowerCase().includes('msku')
     );
-
-    if (missingColumns.length > 0) {
-      throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+    
+    if (!hasSkuColumn) {
+      throw new Error('Missing product identifier column (SKU, Product, FSN, ASIN, or MSKU)');
     }
+
+    console.log('CSV validation passed - found product identifier column');
 
     const totalRows = lines.length - 1; // Exclude header
     await storage.updateFileUpload(uploadId, { totalRows });
@@ -87,7 +92,7 @@ export class FileProcessor {
     // Process each data row
     for (let i = 1; i < lines.length; i++) {
       try {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const values = this.parseCSVLine(lines[i]);
         const row: SalesDataRow = {};
         
         // Map values to headers
@@ -126,12 +131,12 @@ export class FileProcessor {
         return '';
       };
 
-      const skuCode = getColumnValue(['sku', 'product_sku', 'productsku', 'product_code']);
-      const productName = getColumnValue(['product_name', 'productname', 'name', 'title', 'product_title']);
+      const skuCode = getColumnValue(['sku', 'product_sku', 'productsku', 'product_code', 'fsn', 'asin', 'msku']);
+      const productName = getColumnValue(['product_name', 'productname', 'name', 'title', 'product_title', 'product']);
       const marketplace = getColumnValue(['marketplace', 'channel', 'platform', 'source']) || 'unknown';
-      const orderDateStr = getColumnValue(['order_date', 'orderdate', 'date', 'transaction_date']);
-      const quantityStr = getColumnValue(['quantity', 'qty', 'units', 'count']);
-      const revenueStr = getColumnValue(['revenue', 'price', 'amount', 'total', 'value', 'sales']);
+      const orderDateStr = getColumnValue(['order_date', 'orderdate', 'date', 'transaction_date', 'ordered on', 'invoice date']);
+      const quantityStr = getColumnValue(['quantity', 'qty', 'units', 'count', 'reconciled quantity']);
+      const revenueStr = getColumnValue(['revenue', 'price', 'amount', 'total', 'value', 'sales', 'invoice amount', 'selling price per item']);
 
       // Validate required fields
       if (!skuCode.trim()) {
@@ -209,6 +214,28 @@ export class FileProcessor {
       .trim();
 
     return { baseProduct, marketplace };
+  }
+
+  private parseCSVLine(line: string): string[] {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current.trim());
+    return result;
   }
 }
 

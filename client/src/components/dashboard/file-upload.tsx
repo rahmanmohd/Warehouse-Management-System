@@ -49,6 +49,34 @@ export default function FileUpload() {
     },
   });
 
+  const processAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/process-all', {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Process all failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/uploads"] });
+      toast({
+        title: "Success",
+        description: data.message || "Processing initiated",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to process files",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach((file) => {
       uploadMutation.mutate(file);
@@ -70,9 +98,13 @@ export default function FileUpload() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Data Upload & Processing</CardTitle>
-          <Button size="sm">
+          <Button 
+            size="sm" 
+            onClick={() => processAllMutation.mutate()}
+            disabled={processAllMutation.isPending}
+          >
             <Play className="w-4 h-4 mr-2" />
-            Process All
+            {processAllMutation.isPending ? "Processing..." : "Process All"}
           </Button>
         </div>
       </CardHeader>
