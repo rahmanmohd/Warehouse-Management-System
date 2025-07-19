@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as csv from 'csv-parser';
 import * as path from 'path';
 import { storage } from '../storage';
 
@@ -14,19 +13,26 @@ interface SalesDataRow {
 }
 
 export class FileProcessor {
-  async processFile(uploadId: number, filePath: string): Promise<void> {
+  async processFile(uploadId: number, filePath: string, originalName?: string): Promise<void> {
     try {
       await storage.updateFileUpload(uploadId, { 
         status: 'processing',
         progress: 0
       });
 
-      const fileExtension = path.extname(filePath).toLowerCase();
+      // Check if it's a CSV file based on original filename
+      const isCSV = originalName ? originalName.toLowerCase().endsWith('.csv') : path.extname(filePath).toLowerCase() === '.csv';
       
-      if (fileExtension === '.csv') {
+      console.log('File processing details:');
+      console.log('- Original name:', originalName);
+      console.log('- File path:', filePath);
+      console.log('- Is CSV:', isCSV);
+      
+      if (isCSV) {
         await this.processCsvFile(uploadId, filePath);
       } else {
-        throw new Error(`Unsupported file type: ${fileExtension}`);
+        const fileType = originalName ? path.extname(originalName) : path.extname(filePath);
+        throw new Error(`Unsupported file type: ${fileType || 'unknown'}. Only CSV files are supported.`);
       }
 
       await storage.updateFileUpload(uploadId, { 
@@ -51,72 +57,59 @@ export class FileProcessor {
   }
 
   private async processCsvFile(uploadId: number, filePath: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const rows: SalesDataRow[] = [];
-      let totalRows = 0;
-      let processedRows = 0;
-      let headers: string[] = [];
+    // Simple CSV processing without external library
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const lines = fileContent.split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) {
+      throw new Error('CSV file is empty');
+    }
 
-      // Check if file exists and is readable
-      if (!fs.existsSync(filePath)) {
-        return reject(new Error('File not found'));
+    // Parse headers
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    console.log('CSV Headers detected:', headers);
+
+    // Validate required columns
+    const requiredColumns = ['sku', 'quantity', 'revenue'];
+    const missingColumns = requiredColumns.filter(col => 
+      !headers.some(header => header.toLowerCase().includes(col.toLowerCase()))
+    );
+
+    if (missingColumns.length > 0) {
+      throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
+    }
+
+    const totalRows = lines.length - 1; // Exclude header
+    await storage.updateFileUpload(uploadId, { totalRows });
+
+    let processedRows = 0;
+
+    // Process each data row
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const row: SalesDataRow = {};
+        
+        // Map values to headers
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+
+        await this.processRow(row);
+        processedRows++;
+        
+        const progress = Math.floor((processedRows / totalRows) * 100);
+        await storage.updateFileUpload(uploadId, { 
+          progress,
+          rowsProcessed: processedRows
+        });
+      } catch (error) {
+        console.error(`Error processing row ${i}:`, error);
+        // Continue with other rows
       }
+    }
 
-      // First pass: count total rows and get headers
-      fs.createReadStream(filePath)
-        .pipe(csv())
-        .on('headers', (headerList: string[]) => {
-          headers = headerList;
-          console.log('CSV Headers detected:', headers);
-        })
-        .on('data', () => totalRows++)
-        .on('error', (error) => {
-          console.error('CSV parsing error:', error);
-          reject(new Error(`CSV parsing failed: ${error.message}`));
-        })
-        .on('end', async () => {
-          await storage.updateFileUpload(uploadId, { totalRows });
-
-          // Validate required columns exist
-          const requiredColumns = ['sku', 'quantity', 'revenue'];
-          const missingColumns = requiredColumns.filter(col => 
-            !headers.some(header => header.toLowerCase().includes(col.toLowerCase()))
-          );
-
-          if (missingColumns.length > 0) {
-            return reject(new Error(`Missing required columns: ${missingColumns.join(', ')}`));
-          }
-
-          // Second pass: process data
-          fs.createReadStream(filePath)
-            .pipe(csv())
-            .on('data', (row: SalesDataRow) => {
-              rows.push(row);
-            })
-            .on('error', (error) => {
-              reject(new Error(`CSV processing failed: ${error.message}`));
-            })
-            .on('end', async () => {
-              try {
-                for (const row of rows) {
-                  await this.processRow(row);
-                  processedRows++;
-                  
-                  const progress = Math.floor((processedRows / totalRows) * 100);
-                  await storage.updateFileUpload(uploadId, { 
-                    progress,
-                    rowsProcessed: processedRows
-                  });
-                }
-                resolve();
-              } catch (error) {
-                reject(error);
-              }
-            })
-            .on('error', reject);
-        })
-        .on('error', reject);
-    });
+    console.log(`Processed ${processedRows} rows successfully`);
   }
 
   private async processRow(row: SalesDataRow): Promise<void> {

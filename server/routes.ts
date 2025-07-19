@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Start processing file asynchronously
-      fileProcessor.processFile(fileUpload.id, req.file.path);
+      fileProcessor.processFile(fileUpload.id, req.file.path, req.file.originalname);
 
       res.status(201).json(fileUpload);
     } catch (error) {
